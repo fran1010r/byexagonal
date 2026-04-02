@@ -8,8 +8,9 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "cambia-esto-en-produccion")
 
 # ── Configuración ──────────────────────────────────────────────
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
-METADATA_FILE = os.path.join(os.path.dirname(__file__), "files_metadata.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+METADATA_FILE = os.path.join(BASE_DIR, "files_metadata.json")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin123")
 MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
 
@@ -37,9 +38,9 @@ def format_size(bytes):
         bytes /= 1024
     return f"{bytes:.1f} TB"
 
-def get_icon(filename):
+def get_tag(filename):
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    icons = {
+    tags = {
         "pdf": "PDF", "zip": "ZIP", "rar": "ZIP", "7z": "ZIP",
         "jpg": "IMG", "jpeg": "IMG", "png": "IMG", "gif": "IMG", "webp": "IMG",
         "mp4": "VID", "mov": "VID", "avi": "VID", "mkv": "VID",
@@ -49,7 +50,7 @@ def get_icon(filename):
         "docx": "DOC", "doc": "DOC", "txt": "TXT",
         "pptx": "PPT", "ppt": "PPT",
     }
-    return icons.get(ext, ext.upper()[:3] or "FILE")
+    return tags.get(ext, ext.upper()[:4] or "FILE")
 
 
 # ── Rutas públicas ─────────────────────────────────────────────
@@ -61,13 +62,26 @@ def home():
 @app.route("/download/<filename>")
 def download(filename):
     safe_name = secure_filename(filename)
+    filepath = os.path.join(UPLOAD_FOLDER, safe_name)
+
+    if not os.path.exists(filepath):
+        flash("Archivo no encontrado")
+        return redirect(url_for("home"))
+
+    # Incrementar contador
     files = load_metadata()
     for f in files:
         if f["filename"] == safe_name:
             f["downloads"] = f.get("downloads", 0) + 1
             break
     save_metadata(files)
-    return send_from_directory(app.config["UPLOAD_FOLDER"], safe_name, as_attachment=True)
+
+    return send_from_directory(
+        UPLOAD_FOLDER,
+        safe_name,
+        as_attachment=True,
+        download_name=safe_name
+    )
 
 
 # ── Admin ──────────────────────────────────────────────────────
@@ -100,7 +114,7 @@ def upload():
         return redirect(url_for("admin"))
 
     filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
 
     size = os.path.getsize(filepath)
@@ -111,7 +125,7 @@ def upload():
         "description": description,
         "size": format_size(size),
         "size_bytes": size,
-        "tag": get_icon(filename),
+        "tag": get_tag(filename),
         "date": datetime.now().strftime("%d %b %Y"),
         "downloads": 0
     })
@@ -125,7 +139,7 @@ def delete_file(filename):
         return redirect(url_for("admin"))
 
     safe_name = secure_filename(filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], safe_name)
+    filepath = os.path.join(UPLOAD_FOLDER, safe_name)
     if os.path.exists(filepath):
         os.remove(filepath)
 
@@ -142,7 +156,7 @@ def logout():
 
 @app.route("/api/status")
 def status():
-    return jsonify({"status": "online", "files": len(load_metadata())})
+    return jsonify({"status": "online", "project": "By Exagonal", "files": len(load_metadata())})
 
 
 if __name__ == "__main__":
