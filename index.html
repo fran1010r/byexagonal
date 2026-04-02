@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archivos — Mi Sitio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111;
+    --border: #222;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --text: #f0f0f0;
+    --muted: #555;
+    --card: #131313;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID BG ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 3rem 4rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .admin-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    transition: all 0.2s;
+    letter-spacing: 0.1em;
+  }
+  .admin-link:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 4rem 3rem;
+  }
+
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .hero-eyebrow::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  h1 {
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  h1 em {
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(240,240,240,0.3);
+  }
+
+  .hero-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    max-width: 400px;
+    line-height: 1.7;
+  }
+
+  /* ── COUNT BAR ── */
+  .count-bar {
+    position: relative;
+    z-index: 1;
+    padding: 1rem 4rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .count-num {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .count-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    line-height: 1.6;
+  }
+
+  .divider { width: 1px; height: 40px; background: var(--border); }
+
+  /* ── FILE GRID ── */
+  .files-section {
+    position: relative;
+    z-index: 1;
+    padding: 3rem 4rem;
+  }
+
+  .files-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    border: 1px solid var(--border);
+    background: var(--border);
+  }
+
+  .file-card {
+    background: var(--card);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .file-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(232,255,71,0.03) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .file-card:hover { background: #161616; }
+  .file-card:hover::before { opacity: 1; }
+
+  .file-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .file-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    padding: 0.3rem 0.6rem;
+    background: rgba(232,255,71,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(232,255,71,0.2);
+    border-radius: 3px;
+  }
+
+  .file-meta {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .file-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+
+  .file-desc {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+    flex-grow: 1;
+  }
+
+  .download-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.9rem 1.2rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    text-decoration: none;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .download-btn:hover {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+
+  .download-btn .arrow {
+    font-size: 1rem;
+    transition: transform 0.2s;
+  }
+
+  .download-btn:hover .arrow { transform: translateY(2px); }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 8rem 4rem;
+    border: 1px solid var(--border);
+    margin: 0 4rem 4rem;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.3;
+  }
+
+  .empty h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+  }
+
+  .empty p {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 4rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  footer span {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    header, .hero, .count-bar, .files-section, footer { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .empty { margin: 0 1.5rem 3rem; }
+    h1 { font-size: 3.5rem; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .file-card {
+    animation: fadeUp 0.4s ease both;
+  }
+
+  {% for i in range(20) %}
+  .file-card:nth-child({{ i + 1 }}) { animation-delay: {{ i * 0.05 }}s; }
+  {% endfor %}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Mi<span>.</span>Sitio</div>
+  <a href="/admin" class="admin-link">admin →</a>
+</header>
+
+<section class="hero">
+  <div class="hero-eyebrow">Repositorio de archivos</div>
+  <h1>Descarga <em>lo</em><br>que necesitas</h1>
+  <p class="hero-sub">Todos los archivos publicados disponibles para descargar de forma directa.</p>
+</section>
+
+<div class="count-bar">
+  <div>
+    <div class="count-num">{{ files|length }}</div>
+    <div class="count-label">Archivos<br>disponibles</div>
+  </div>
+  <div class="divider"></div>
+  <div>
+    <div class="count-num">{{ files|sum(attribute='downloads') if files else 0 }}</div>
+    <div class="count-label">Descargas<br>totales</div>
+  </div>
+</div>
+
+{% if files %}
+<section class="files-section">
+  <div class="files-grid">
+    {% for file in files %}
+    <div class="file-card">
+      <div class="file-top">
+        <span class="file-tag">{{ file.tag }}</span>
+        <div class="file-meta">
+          {{ file.size }}<br>
+          {{ file.date }}<br>
+          {{ file.downloads }} descargas
+        </div>
+      </div>
+      <div class="file-name">{{ file.label }}</div>
+      {% if file.description %}
+      <div class="file-desc">{{ file.description }}</div>
+      {% endif %}
+      <a class="download-btn" href="/download/{{ file.filename }}">
+        Descargar archivo
+        <span class="arrow">↓</span>
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="empty">
+  <div class="empty-icon">◻</div>
+  <h3>Sin archivos aún</h3>
+  <p>El administrador no ha publicado ningún archivo todavía.</p>
+</div>
+{% endif %}
+
+<footer>
+  <span>© {{ 2025 }} Mi Sitio</span>
+  <span>Todos los archivos son seguros</span>
+</footer>
+
+</body>
+</html>
