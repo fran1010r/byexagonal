@@ -1,6 +1,8 @@
-from flask import Flask, render_template, jsonify, request, send_from_directory, redirect, url_for, session, flash
+from flask import Flask, render_template, jsonify, request, send_from_directory, redirect, url_for, session, flash, send_file
 import os
 import json
+import zipfile
+import io
 from datetime import datetime
 from werkzeug.utils import secure_filename
 
@@ -68,7 +70,6 @@ def download(filename):
         flash("Archivo no encontrado")
         return redirect(url_for("home"))
 
-    # Incrementar contador
     files = load_metadata()
     for f in files:
         if f["filename"] == safe_name:
@@ -76,12 +77,7 @@ def download(filename):
             break
     save_metadata(files)
 
-    return send_from_directory(
-        UPLOAD_FOLDER,
-        safe_name,
-        as_attachment=True,
-        download_name=safe_name
-    )
+    return send_from_directory(UPLOAD_FOLDER, safe_name, as_attachment=True, download_name=safe_name)
 
 
 # ── Admin ──────────────────────────────────────────────────────
@@ -130,7 +126,7 @@ def upload():
         "downloads": 0
     })
     save_metadata(files)
-    flash(f"Archivo publicado correctamente")
+    flash("Archivo publicado correctamente")
     return redirect(url_for("admin"))
 
 @app.route("/admin/delete/<filename>", methods=["POST"])
@@ -143,11 +139,85 @@ def delete_file(filename):
     if os.path.exists(filepath):
         os.remove(filepath)
 
-    files = load_metadata()
-    files = [f for f in files if f["filename"] != safe_name]
+    files = [f for f in load_metadata() if f["filename"] != safe_name]
     save_metadata(files)
     flash("Archivo eliminado")
     return redirect(url_for("admin"))
+
+
+# ── BACKUP ─────────────────────────────────────────────────────
+@app.route("/admin/backup")
+def backup_download():
+    """Genera un ZIP con todos los archivos + metadata y lo descarga."""
+    if not session.get("admin"):
+        return redirect(url_for("admin"))
+
+    zip_buffer = io.BytesIO()
+
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        if os.path.exists(METADATA_FILE):
+            zf.write(METADATA_FILE, "files_metadata.json")
+
+        for fname in os.listdir(UPLOAD_FOLDER):
+            if fname == ".gitkeep":
+                continue
+            fpath = os.path.join(UPLOAD_FOLDER, fname)
+            if os.path.isfile(fpath):
+                zf.write(fpath, f"uploads/{fname}")
+
+    zip_buffer.seek(0)
+    fecha = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    return send_file(
+        zip_buffer,
+        mimetype="application/zip",
+        as_attachment=True,
+        download_name=f"backup_exagonal_{fecha}.zip"
+    )
+
+
+# ── RESTORE ────────────────────────────────────────────────────
+@app.route("/admin/restore", methods=["POST"])
+def backup_restore():
+    """Restaura archivos y metadata desde un ZIP de backup."""
+    if not session.get("admin"):
+        return redirect(url_for("admin"))
+
+    backup_file = request.files.get("backup_zip")
+    if not backup_file or backup_file.filename == "":
+        flash("No seleccionaste un archivo de backup")
+        return redirect(url_for("admin"))
+
+    if not backup_file.filename.endswith(".zip"):
+        flash("El archivo debe ser un .zip generado por el backup")
+        return redirect(url_for("admin"))
+
+    try:
+        zip_buffer = io.BytesIO(backup_file.read())
+        with zipfile.ZipFile(zip_buffer, "r") as zf:
+            names = zf.namelist()
+
+            if "files_metadata.json" in names:
+                with zf.open("files_metadata.json") as mf:
+                    metadata = json.load(mf)
+                save_metadata(metadata)
+
+            restored = 0
+            for name in names:
+                if name.startswith("uploads/") and not name.endswith("/"):
+                    fname = os.path.basename(name)
+                    if fname and fname != ".gitkeep":
+                        dest = os.path.join(UPLOAD_FOLDER, fname)
+                        with zf.open(name) as src, open(dest, "wb") as dst:
+                            dst.write(src.read())
+                        restored += 1
+
+        flash(f"Restauración exitosa — {restored} archivo(s) recuperado(s)")
+    except Exception as e:
+        flash(f"Error al restaurar: {str(e)}")
+
+    return redirect(url_for("admin"))
+
 
 @app.route("/admin/logout")
 def logout():
